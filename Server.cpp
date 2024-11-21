@@ -66,10 +66,21 @@ void accept_cb(struct evconnlistener *listen, evutil_socket_t fd,
     bufferevent_enable(bev,EV_READ | EV_PERSIST);   //注册事件
 }
 
+//读事件回调函数
 void read_cb(struct bufferevent *bev, void *arg)
 {
+    msgProcess mpc(bev);//接收并处理数据
+    if(!mpc.recviece_msg())//数据不完整
+    {
+        return;
+    }
     
+    string msg = mpc.get_msg();//获取解密后的数据
+    requestProcess rpc(bev);
+    rpc.Process(msg);//处理请求
 }
+
+//异常事件回调函数
 void event_cb(struct bufferevent *bev, short events, void *arg)
 {
     if(events & BEV_EVENT_EOF)//与客户端断开连接

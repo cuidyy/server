@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <event2/bufferevent.h>
 #include <event2/listener.h>
+
+#include "msgProcess.h"
+#include "requestProcess.h"
 using namespace std;
 #define BUFFER_SIZE 1024
 class Server
