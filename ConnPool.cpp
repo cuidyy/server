@@ -1,10 +1,10 @@
-
 #include "ConnPool.h"
-#include <json/json.h>
 #include <fstream>
 #include <thread>
 #include <iostream>
 using namespace Json;
+
+//获得单例
 ConnPool* ConnPool::getConnPool() {
     static ConnPool pool;
     return &pool;
@@ -13,7 +13,7 @@ ConnPool* ConnPool::getConnPool() {
 // 从连接池中取出一个连接
 shared_ptr<MysqlConn> ConnPool::getConn() {
     unique_lock<mutex> locker(m_mutexQ);
-    while (m_connQ.empty()) {
+    while (m_connQ.empty()) {//连接队列为空
         if (cv_status::timeout == m_cond.wait_for(locker, chrono::milliseconds(m_timeout))) {
             if (m_connQ.empty()) {
                 //return nullptr;
@@ -38,7 +38,7 @@ ConnPool::~ConnPool() {
         delete conn;
     }
 }
- 
+
 ConnPool::ConnPool() {
     // 加载配置文件
     if (!parseJsonFile()) {
@@ -53,11 +53,12 @@ ConnPool::ConnPool() {
     producer.detach();
     recycler.detach();
 }
- 
+
+//解析文件
 bool ConnPool::parseJsonFile() {
-    ifstream ifs("dbconf.json");
-    Reader rd;
-    Value root;
+    ifstream ifs("mysql.json");
+    Json::Reader rd;
+    Json::Value root;
     rd.parse(ifs, root);
     if (root.isObject()) {
         std::cout << "开始解析配置文件..." << std::endl;
@@ -74,7 +75,8 @@ bool ConnPool::parseJsonFile() {
     }
     return false;
 }
- 
+
+//生产连接线程
 void ConnPool::produceConn() {
     while (true) {  // 生产者线程不断生产连接，直到连接池达到最大值
         unique_lock<mutex> locker(m_mutexQ);  // 加锁，保证线程安全
@@ -86,7 +88,7 @@ void ConnPool::produceConn() {
     }
 }
  
-// 回收数据库连接
+// 回收连接线程
 void ConnPool::recycleConn() {
     while (true) {
         this_thread::sleep_for(chrono::milliseconds(500));// 每隔半秒钟检测一次

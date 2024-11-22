@@ -32,10 +32,12 @@ public:
     void refreshAliveTime();
     // 计算连接存活的总时长
     long long getAliveTime();
-private:
+
     void freeResult();
+private:
+    
     MYSQL* m_conn = nullptr; // 数据库连接
-    MYSQL_RES* m_result = nullptr;
-    MYSQL_ROW m_row = nullptr;
-    steady_clock::time_point m_aliveTime;
+    MYSQL_RES* m_result = nullptr;//结果集
+    MYSQL_ROW m_row = nullptr;//行数据
+    steady_clock::time_point m_aliveTime;//数据库连接建立的起始时间
 };

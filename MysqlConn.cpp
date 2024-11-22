@@ -51,7 +51,7 @@ bool MysqlConn::next() {
  
 // 得到结果集中的字段值
 string MysqlConn::value(int index) {
-    int rowCount = mysql_num_fields(m_result);
+    int rowCount = mysql_num_fields(m_result);//获取列数
     if (index >= rowCount || index < 0) {
         return string();
     }
@@ -62,7 +62,7 @@ string MysqlConn::value(int index) {
  
 // 事务操作
 bool MysqlConn::transaction() {
-    return mysql_autocommit(m_conn, false);
+    return mysql_autocommit(m_conn, false);//置事务为手动提交
 }
  
 // 提交事务
@@ -88,7 +88,8 @@ long long MysqlConn::getAliveTime() {
     milliseconds millsec = duration_cast<milliseconds>(duration);
     return millsec.count();
 }
- 
+
+//释放结果集
 void MysqlConn::freeResult() {
     if (m_result != nullptr) {
         mysql_free_result(m_result);
