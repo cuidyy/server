@@ -41,10 +41,21 @@ void requestProcess::Login(Json::Value user)
 
     //获取数据库连接
     auto conn = ConnPool::getConnPool()->getConn();
+
+    //数据库连接失败,直接返回
+    if(!conn->is_connected())
+    {
+        reply_msg["request"] = "login";
+        reply_msg["msg"] = "连接数据库失败";
+        sendMsg();
+        return;
+    }
+
     string sql_str = "select * from user where username = \'"
                     + username + "\' and password = \'" + password + "\';";
 
     conn->query(sql_str);//查询数据库
+
     //遍历结果集，查看用户是否存在
     if(!conn->next())
     {
@@ -74,6 +85,16 @@ void requestProcess::Register(Json::Value user)
 
     //获取数据库连接
     auto conn = ConnPool::getConnPool()->getConn();
+
+    //数据库连接失败,直接返回
+    if(!conn->is_connected())
+    {
+        reply_msg["request"] = "register";
+        reply_msg["msg"] = "连接数据库失败";
+        sendMsg();
+        return;
+    }
+
     string sql_str = "select * from user where username = \'"
                     + username + "\';";
                     

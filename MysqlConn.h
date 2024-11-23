@@ -33,11 +33,14 @@ public:
     // 计算连接存活的总时长
     long long getAliveTime();
 
-    void freeResult();
+    void freeResult();//释放结果集
+
+    bool is_connected();//判断是否连接
 private:
     
     MYSQL* m_conn = nullptr; // 数据库连接
     MYSQL_RES* m_result = nullptr;//结果集
     MYSQL_ROW m_row = nullptr;//行数据
     steady_clock::time_point m_aliveTime;//数据库连接建立的起始时间
+    bool connected_status = true;//是否连接上数据库
 };

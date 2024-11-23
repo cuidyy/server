@@ -17,6 +17,10 @@ MysqlConn::~MysqlConn() {
 // 连接数据库
 bool MysqlConn::connect(string user, string passwd, string dbName, string ip, unsigned short port) {
     MYSQL* ptr = mysql_real_connect(m_conn, ip.c_str(), user.c_str(), passwd.c_str(), dbName.c_str(), port, nullptr, 0);
+    if(ptr == nullptr)//连接失败
+    {
+        connected_status = false;
+    }
     return ptr != nullptr;
 }
  
@@ -95,4 +99,9 @@ void MysqlConn::freeResult() {
         mysql_free_result(m_result);
         m_result = nullptr;
     }
+}
+
+bool MysqlConn::is_connected()
+{
+    return connected_status;
 }
