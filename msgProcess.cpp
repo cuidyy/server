@@ -1,5 +1,5 @@
 #include "msgProcess.h"
-
+#include <thread>
 msgProcess::msgProcess(struct bufferevent *bev) : m_bev(bev)
 {
 
@@ -17,7 +17,7 @@ bool msgProcess::recviece_msg()
 
     //获取当前缓存区存放数据大小
     int buf_len = evbuffer_get_length(m_evbuf);
-
+    cout << "buf_len: " << buf_len << endl;
     //数据表头不完整
     if(buf_len < 4)
     {
@@ -30,17 +30,19 @@ bool msgProcess::recviece_msg()
     //读取数据包表头，提取数据包长度
     bufferevent_read(m_bev, (char*)&data_len, 4);
     data_len = ntohl(data_len);
-
+    cout << "data_len: " << data_len << endl;
     char buffer[4096];//接收缓冲区
     string msg;//接收缓冲区的数据
     //循环接收数据
     while(data_len > 0)
     {
         int size = (data_len <= 4096) ? data_len : 4096;
-        bufferevent_read(m_bev, buffer, size);//读取数据
+        int actualRead = bufferevent_read(m_bev, buffer, size);//读取数据
+        cout << "read " << actualRead;
         msg.append(buffer, size);
         data_len -= size;
     }
+    cout << "aaa" << endl;
     decode_msg(msg);
     return true;
 }

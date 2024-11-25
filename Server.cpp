@@ -72,6 +72,7 @@ void read_cb(struct bufferevent *bev, void *arg)
     msgProcess mpc(bev);//接收并处理数据
     if(!mpc.recviece_msg())//数据不完整
     {
+        cout << "false" << endl;
         return;
     }
     

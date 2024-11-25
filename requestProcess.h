@@ -20,9 +20,11 @@ public:
     void Process(string msg);//根据request字段内容进行对应的处理
 
 private:
-    void Login(Json::Value user);
+    void Login(Json::Value user);//登录请求处理
 
-    void Register(Json::Value user);
+    void Register(Json::Value user);//注册请求处理
+
+    void Upload(Json::Value user);//图片上传请求处理
 
     void sendMsg();//发送消息给客户端
 private:

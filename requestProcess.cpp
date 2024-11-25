@@ -19,6 +19,7 @@ void requestProcess::Process(string msg)
     {
         cout << "json解析失败" << endl;
     }
+    cout << root << endl;
     string request = root["request"].asString();//请求内容
 
     if(request == "login")
@@ -30,6 +31,12 @@ void requestProcess::Process(string msg)
     {
         Json::Value user = root["user"];
         Register(user);
+    }
+    if(request == "upload")
+    {
+        Json::Value user = root["user"];
+        cout << user << endl;
+        Upload(user);
     }
 }
 
@@ -129,6 +136,11 @@ void requestProcess::Register(Json::Value user)
 
     //回复消息
     sendMsg();
+}
+
+void requestProcess::Upload(Json::Value user)
+{
+    
 }
 
 void requestProcess::sendMsg()
