@@ -46,6 +46,11 @@ void requestProcess::Process(string msg)
         Json::Value user = root["user"];
         Download(user);
     }
+    if(request == "delete")
+    {
+        Json::Value user = root["user"];
+        Delete(user);
+    }
 }
 
 void requestProcess::Login(Json::Value user)
@@ -315,6 +320,63 @@ void requestProcess::Download(Json::Value user)
         reply_msg["request"] = "download";
     }
 
+    //释放结果集
+    conn->freeResult();
+    sendMsg();
+}
+
+void requestProcess::Delete(Json::Value user)
+{
+    string username = user["username"].asString();
+    string imagename = user["imagename"].asString();
+
+    //获取数据库连接
+    auto conn = ConnPool::getConnPool()->getConn();
+    //数据库连接失败,直接返回
+    if(!conn->is_connected())
+    {
+        reply_msg["request"] = "delete";
+        reply_msg["msg"] = "连接数据库失败";
+        sendMsg();
+        return;
+    }
+    string sql_str = "select * from user_img where username = \'"
+                    + username + "\' and imagename = \'" + imagename + "\';";
+
+    conn->query(sql_str);//查询数据库
+    //图片是否存在
+    if(conn->next())//图片存在
+    {
+        string sql_delete = "delete from user_img where username = \'"
+                            + username + "\' and imagename = \'" + imagename + "\';";
+        if(!conn->update(sql_delete))   
+        {
+            reply_msg["request"] = "delete";
+            reply_msg["msg"] = "删除失败";
+        }
+        else//删除成功返回新的图片列表
+        {
+            //图片名称列表
+            Json::Value list;
+            string sql_str = "select imagename from user_img where username = \'"
+                    + username + "\';";
+
+            conn->query(sql_str);//查询数据库
+            while(conn->next())
+            {
+                string imgname = conn->value(0);
+                list.append(imgname);
+            }
+            reply_msg["request"] = "delete";
+            reply_msg["msg"] = "删除成功";
+            reply_msg["list"] = list;
+        }
+    }
+    else//图片不存在
+    {
+        reply_msg["request"] = "delete";
+        reply_msg["msg"] = "图片不存在";
+    }
     //释放结果集
     conn->freeResult();
     sendMsg();

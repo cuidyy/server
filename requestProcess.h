@@ -34,6 +34,8 @@ private:
 
     void Download(Json::Value user);//用户下载图片处理
 
+    void Delete(Json::Value user);//删除图片处理
+    
     void sendMsg();//发送消息给客户端
 private:
     Json::Value reply_msg;//用于回复的消息
