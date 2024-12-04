@@ -38,7 +38,8 @@ private:
     
     void sendMsg();//发送消息给客户端
 private:
-    Json::Value reply_msg;//用于回复的消息
+    std::string staus_line;//状态行
+    Json::Value reply_msg;//用于回复的消息 响应体
     struct bufferevent *m_bev;//bufferevnt对象,用于回复消息
 };
 

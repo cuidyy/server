@@ -12,30 +12,51 @@ requestProcess::~requestProcess()
 
 void requestProcess::Process(string msg)
 {
-    Json::Reader reader;
-    Json::Value root;
-    //reader将Json字符串解析到root，root将包含Json里面所有的子元素
-    if(!reader.parse(msg, root))
-    {
-        cout << "json解析失败" << endl;
-    }
-    string request = root["request"].asString();//请求内容
+    //解析http请求
+    std::istringstream iss(msg);
 
-    if(request == "login")
+    // 解析请求方法
+    std::string method, reqpath;
+    std::getline(iss, method, ' ');
+
+    if(method == "POST")
     {
-        Json::Value user = root["user"];
-        Login(user);
+        //解析请求路径
+        std::getline(iss, reqpath, ' ');
+
+        //提取请求体
+        std::string request_body;
+        int pos = msg.find("\r\n\r\n");
+        request_body = msg.substr(pos + 4);
+
+        //解析请求体内容
+        Json::Reader reader;
+        Json::Value root;
+        //reader将Json字符串解析到root，root将包含Json里面所有的子元素
+        if(!reader.parse(request_body, root))
+        {
+            cout << "json解析失败" << endl;
+        }
+
+        //根据请求类型进行处理
+        if(reqpath == "/login")
+        {
+            Json::Value user = root["user"];
+            Login(user);
+        }
+        if(reqpath == "/register")
+        {
+            Json::Value user = root["user"];
+            Register(user);
+        }
+        if(reqpath == "/upload")
+        {
+            Json::Value user = root["user"];
+            Upload(user);
+        }
+
     }
-    if(request == "register")
-    {
-        Json::Value user = root["user"];
-        Register(user);
-    }
-    if(request == "upload")
-    {
-        Json::Value user = root["user"];
-        Upload(user);
-    }
+
     if(request == "getlist")
     {
         Json::Value user = root["user"];
@@ -67,6 +88,7 @@ void requestProcess::Login(Json::Value user)
     {
         reply_msg["request"] = "login";
         reply_msg["msg"] = "连接数据库失败";
+        staus_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         sendMsg();
         return;
     }
@@ -81,12 +103,14 @@ void requestProcess::Login(Json::Value user)
     {
         reply_msg["request"] = "login";
         reply_msg["msg"] = "用户名不存在或密码有误";
+        staus_line = "HTTP/1.1 400 Bad Request\r\n\r\n";
         cout << "用户名不存在" << endl;
     }
     else
     {
         reply_msg["request"] = "login";
         reply_msg["msg"] = "登录成功";
+        staus_line = "HTTP/1.1 200 OK\r\n\r\n";
         cout << "登录成功" << endl;
     }
     
@@ -387,6 +411,9 @@ void requestProcess::sendMsg()
     //将json格式转换为字符串
     string msg = writer.write(reply_msg);
 
+    //添加状态行
+    msg = staus_line + msg;
+    
     //base64编码
     msg = base64_encode(msg);
 
