@@ -2,6 +2,7 @@
 #define REQUESTPROCESS_H
 #include <iostream>
 #include <string>
+#include <unistd.h>
 #include <jsoncpp/json/json.h>
 #include <stdlib.h>
 #include <event2/bufferevent.h>
@@ -13,6 +14,7 @@
 #include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unordered_map>
 using namespace std;
 
 //请求处理
@@ -38,7 +40,7 @@ private:
     
     void sendMsg();//发送消息给客户端
 private:
-    std::string staus_line;//状态行
+    std::string status_line;//状态行
     Json::Value reply_msg;//用于回复的消息 响应体
     struct bufferevent *m_bev;//bufferevnt对象,用于回复消息
 };

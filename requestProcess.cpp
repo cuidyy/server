@@ -16,14 +16,37 @@ void requestProcess::Process(string msg)
     std::istringstream iss(msg);
 
     // 解析请求方法
-    std::string method, reqpath;
+    std::string method, reqpath;//请求方法 请求路径
     std::getline(iss, method, ' ');
+
+    //解析请求路径
+    std::getline(iss, reqpath,' ');
+    // 提取请求路径中的参数
+    std::string request_params;
+    int pos = reqpath.find('?');    //请求路径与参数的分隔符
+    if (pos!= std::string::npos)
+    {
+        request_params = reqpath.substr(pos + 1);//获取请求参数
+        reqpath = reqpath.substr(0, pos);//获取请求路径
+    }
+
+    //解析请求参数
+    std::unordered_map<std::string, std::string> params;
+    std::istringstream param_stream(request_params);
+    std::string param;
+    while (getline(param_stream, param, '&'))
+    {
+        int equal_pos = param.find('=');
+        if (equal_pos != std::string::npos)
+        {
+            std::string key = param.substr(0, equal_pos);
+            std::string value = param.substr(equal_pos + 1);
+            params[key] = value;
+        }
+    }
 
     if(method == "POST")
     {
-        //解析请求路径
-        std::getline(iss, reqpath, ' ');
-
         //提取请求体
         std::string request_body;
         int pos = msg.find("\r\n\r\n");
@@ -36,6 +59,7 @@ void requestProcess::Process(string msg)
         if(!reader.parse(request_body, root))
         {
             cout << "json解析失败" << endl;
+            return;
         }
 
         //根据请求类型进行处理
@@ -56,21 +80,33 @@ void requestProcess::Process(string msg)
         }
 
     }
-
-    if(request == "getlist")
+    else if(method == "GET")
     {
-        Json::Value user = root["user"];
-        Getlist(user);
+        //根据请求类型进行处理
+        if(reqpath == "/getlist")
+        {
+            Json::Value user;
+            user["username"] = params["username"];
+            Getlist(user);
+        }
+        if(reqpath == "/download")
+        {
+            Json::Value user;
+            user["username"] = params["username"];
+            user["imagename"] = params["imagename"];
+            Download(user);
+        }   
     }
-    if(request == "download")
+    else if(method == "DELETE")
     {
-        Json::Value user = root["user"];
-        Download(user);
-    }
-    if(request == "delete")
-    {
-        Json::Value user = root["user"];
-        Delete(user);
+        //根据请求类型进行处理
+        if(reqpath == "/delete")
+        {
+            Json::Value user;
+            user["username"] = params["username"];
+            user["imagename"] = params["imagename"];
+            Delete(user);
+        }
     }
 }
 
@@ -88,7 +124,7 @@ void requestProcess::Login(Json::Value user)
     {
         reply_msg["request"] = "login";
         reply_msg["msg"] = "连接数据库失败";
-        staus_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         sendMsg();
         return;
     }
@@ -99,18 +135,19 @@ void requestProcess::Login(Json::Value user)
     conn->query(sql_str);//查询数据库
 
     //遍历结果集，查看用户是否存在
+    // 用户不存在
     if(!conn->next())
     {
         reply_msg["request"] = "login";
         reply_msg["msg"] = "用户名不存在或密码有误";
-        staus_line = "HTTP/1.1 400 Bad Request\r\n\r\n";
+        status_line = "HTTP/1.1 403 Bad Request\r\n\r\n";
         cout << "用户名不存在" << endl;
     }
-    else
+    else    // 用户存在
     {
         reply_msg["request"] = "login";
         reply_msg["msg"] = "登录成功";
-        staus_line = "HTTP/1.1 200 OK\r\n\r\n";
+        status_line = "HTTP/1.1 200 OK\r\n\r\n";
         cout << "登录成功" << endl;
     }
     
@@ -135,6 +172,7 @@ void requestProcess::Register(Json::Value user)
     {
         reply_msg["request"] = "register";
         reply_msg["msg"] = "连接数据库失败";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         sendMsg();
         return;
     }
@@ -153,11 +191,13 @@ void requestProcess::Register(Json::Value user)
             //插入数据库失败
             reply_msg["request"] = "register";
             reply_msg["msg"] = "注册失败";
+            status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         }
         else
         {
             reply_msg["request"] = "register";
             reply_msg["msg"] = "注册成功";
+            status_line = "HTTP/1.1 201 Created\r\n\r\n";
             cout << "注册成功" << endl;
         }
     }
@@ -165,6 +205,7 @@ void requestProcess::Register(Json::Value user)
     {
         reply_msg["request"] = "register";
         reply_msg["msg"] = "用户名已存在";
+        status_line = "HTTP/1.1 403 Bad Request\r\n\r\n";
         cout << "用户名已存在" << endl;
     }
 
@@ -190,6 +231,7 @@ void requestProcess::Upload(Json::Value user)
     {
         reply_msg["request"] = "upload";
         reply_msg["msg"] = "连接数据库失败";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         sendMsg();
         return;
     }
@@ -238,17 +280,20 @@ void requestProcess::Upload(Json::Value user)
             //插入数据库失败
             reply_msg["request"] = "upload";
             reply_msg["msg"] = "上传失败";
+            status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         }
         else
         {
             reply_msg["request"] = "upload";
             reply_msg["msg"] = "上传成功";
+            status_line = "HTTP/1.1 200 OK\r\n\r\n";
         }                   
     }
     else//图片存在不做任何处理直接回复
     {
         reply_msg["request"] = "upload";
         reply_msg["msg"] = "上传成功";
+        status_line = "HTTP/1.1 200 OK\r\n\r\n";
     }
 
     //释放结果集
@@ -272,7 +317,8 @@ void requestProcess::Getlist(Json::Value user)
     {
         reply_msg["request"] = "upload";
         reply_msg["msg"] = "连接数据库失败";
-        sendMsg();
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+        sendMsg();  
         return;
     }
 
@@ -287,6 +333,7 @@ void requestProcess::Getlist(Json::Value user)
     }
     reply_msg["list"] = list;
     reply_msg["request"] = "getlist";
+    status_line = "HTTP/1.1 200 OK\r\n\r\n";
     
     //释放结果集
     conn->freeResult();
@@ -307,6 +354,7 @@ void requestProcess::Download(Json::Value user)
     {
         reply_msg["request"] = "download";
         reply_msg["msg"] = "连接数据库失败";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         sendMsg();
         return;
     }
@@ -337,11 +385,13 @@ void requestProcess::Download(Json::Value user)
         reply_msg["msg"] = "下载成功";
         reply_msg["imagename"] = imagename;
         reply_msg["request"] = "download";
+        status_line = "HTTP/1.1 200 OK\r\n\r\n";
     }
     else
     {
         reply_msg["msg"] = "图片不存在";
         reply_msg["request"] = "download";
+        status_line = "HTTP/1.1 403 Bad Request\r\n\r\n";
     }
 
     //释放结果集
@@ -361,6 +411,7 @@ void requestProcess::Delete(Json::Value user)
     {
         reply_msg["request"] = "delete";
         reply_msg["msg"] = "连接数据库失败";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         sendMsg();
         return;
     }
@@ -377,6 +428,7 @@ void requestProcess::Delete(Json::Value user)
         {
             reply_msg["request"] = "delete";
             reply_msg["msg"] = "删除失败";
+            status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         }
         else//删除成功返回新的图片列表
         {
@@ -394,12 +446,14 @@ void requestProcess::Delete(Json::Value user)
             reply_msg["request"] = "delete";
             reply_msg["msg"] = "删除成功";
             reply_msg["list"] = list;
+            status_line = "HTTP/1.1 200 OK\r\n\r\n";
         }
     }
     else//图片不存在
     {
         reply_msg["request"] = "delete";
         reply_msg["msg"] = "图片不存在";
+        status_line = "HTTP/1.1 403 Bad Request\r\n\r\n";
     }
     //释放结果集
     conn->freeResult();
@@ -412,7 +466,7 @@ void requestProcess::sendMsg()
     string msg = writer.write(reply_msg);
 
     //添加状态行
-    msg = staus_line + msg;
+    msg = status_line + msg;
     
     //base64编码
     msg = base64_encode(msg);
