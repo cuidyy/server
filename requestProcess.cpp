@@ -279,26 +279,26 @@ void requestProcess::Upload(Json::Value user)
         {
             //插入数据库失败
             reply_msg["request"] = "upload";
-            reply_msg["msg"] = "上传失败";
+            reply_msg["msg"] = imagename + "上传失败";
             status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         }
         else
         {
             reply_msg["request"] = "upload";
-            reply_msg["msg"] = "上传成功";
+            reply_msg["msg"] = imagename + "上传成功";
             status_line = "HTTP/1.1 200 OK\r\n\r\n";
         }                   
     }
     else//图片存在不做任何处理直接回复
     {
         reply_msg["request"] = "upload";
-        reply_msg["msg"] = "上传成功";
+        reply_msg["msg"] = imagename + "上传成功";
         status_line = "HTTP/1.1 200 OK\r\n\r\n";
     }
 
     //释放结果集
     conn->freeResult();
-
+    
     //回复消息
     sendMsg();
 }
