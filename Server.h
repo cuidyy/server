@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <event2/bufferevent.h>
 #include <event2/listener.h>
+#include <event2/bufferevent_ssl.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #include "msgProcess.h"
 #include "requestProcess.h"
@@ -29,13 +32,15 @@ public:
     Server();
     ~Server();
     void run();//运行
-private:
-    void init();//服务器初始化
 
     struct event_base * base = nullptr;//基础事件架构
     struct evconnlistener * listener = nullptr;//监听器
     struct sockaddr_in saddr;//服务器socket信息
     uint16_t port = 8080;
+    SSL_CTX * ctx = nullptr;//SSL上下文
+private:
+    void init();//服务器初始化
+
 };
 
 /**  

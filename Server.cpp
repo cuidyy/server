@@ -2,11 +2,35 @@
 
 Server::Server()
 {
-
+    // 初始化 SSL 库
+    SSL_library_init();
+    // 加载所有可用的 SSL 算法
+    OpenSSL_add_all_algorithms();
+    // 加载 SSL 错误字符串
+    SSL_load_error_strings();
+ 
+    // 创建新的 SSL 上下文，使用 TLS 服务器方法
+    ctx = SSL_CTX_new(TLS_server_method());
+    // 检查 SSL 上下文是否有效
+    if (!ctx) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+ 
+    // 加载服务器证书和私钥
+    if (!SSL_CTX_use_certificate_file(ctx, "server.crt", SSL_FILETYPE_PEM)
+        || !SSL_CTX_use_PrivateKey_file(ctx, "server.key", SSL_FILETYPE_PEM)
+        || !SSL_CTX_check_private_key(ctx)) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
 }
 
 Server::~Server()
 {
+    //释放SSL上下文
+    SSL_CTX_free(ctx);
+
     //释放监听器资源
     evconnlistener_free(listener);
 
@@ -38,7 +62,7 @@ void Server::init()
     saddr.sin_port = htons(8080);
 
     //初始化监听器对象
-    listener = evconnlistener_new_bind(base, accept_cb, base, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1, (struct sockaddr*)&saddr, sizeof(saddr));
+    listener = evconnlistener_new_bind(base, accept_cb, this, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1, (struct sockaddr*)&saddr, sizeof(saddr));
     if(listener == nullptr)
     {
         cout << "listener 创建失败" << endl;
@@ -56,10 +80,18 @@ void accept_cb(struct evconnlistener *listen, evutil_socket_t fd,
     evutil_inet_ntop(AF_INET, addr, ip, sizeof(ip)-1);
     printf("accept a client fd:%d ip:%s\n",fd,ip);
 
-    struct event_base *base = (struct event_base *)arg;    //把base传进来了
+    //获取服务器对象
+    Server* server = (Server*)arg;   
 
-    //构建bufferevent对象 对fd创建bufferevent事件
-    struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
+    //创建SSL对象
+    SSL *ssl = SSL_new(server->ctx);
+
+    //获取base对象
+    struct event_base *base = server->base;
+
+    //创建bufferevent对象，与socket绑定，用于处理socket的读写、异常处理事件
+    struct bufferevent *bev = bufferevent_openssl_socket_new(base, fd, ssl, BUFFEREVENT_SSL_ACCEPTING, BEV_OPT_CLOSE_ON_FREE);
+    if(bev) printf("SSL 握手成功\n");
 
     //设置读回调函数、异常处理函数
     bufferevent_setcb(bev, read_cb, NULL, event_cb, NULL);
@@ -84,12 +116,20 @@ void read_cb(struct bufferevent *bev, void *arg)
 void event_cb(struct bufferevent *bev, short events, void *arg)
 {
     if(events & BEV_EVENT_EOF)//与客户端断开连接
+    {
         printf("客户端断开连接\n");
+        //释放bufferevent资源
+        bufferevent_free(bev);
+    }
     else if (events & BEV_EVENT_ERROR)
+    {
         printf("发送错误\n");
+        bufferevent_free(bev);
+    }
     else if (events & BEV_EVENT_TIMEOUT)
+    {
         printf("超时\n");
+        bufferevent_free(bev);
+    }
 
-    //释放bufferevent资源
-    bufferevent_free(bev);
 }

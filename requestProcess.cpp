@@ -65,16 +65,19 @@ void requestProcess::Process(string msg)
         //根据请求类型进行处理
         if(reqpath == "/login")
         {
+            cout << "login" << endl;
             Json::Value user = root["user"];
             Login(user);
         }
         if(reqpath == "/register")
         {
+            cout << "register" << endl;
             Json::Value user = root["user"];
             Register(user);
         }
         if(reqpath == "/upload")
         {
+            cout << "upload" << endl;
             Json::Value user = root["user"];
             Upload(user);
         }
@@ -85,12 +88,14 @@ void requestProcess::Process(string msg)
         //根据请求类型进行处理
         if(reqpath == "/getlist")
         {
+            cout << "getlist" << endl;
             Json::Value user;
             user["username"] = params["username"];
             Getlist(user);
         }
         if(reqpath == "/download")
         {
+            cout << "download" << endl;
             Json::Value user;
             user["username"] = params["username"];
             user["imagename"] = params["imagename"];
@@ -102,6 +107,7 @@ void requestProcess::Process(string msg)
         //根据请求类型进行处理
         if(reqpath == "/delete")
         {
+            cout << "delete" << endl;
             Json::Value user;
             user["username"] = params["username"];
             user["imagename"] = params["imagename"];

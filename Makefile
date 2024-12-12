@@ -11,7 +11,7 @@ TARGET = test
 SRCS = main.cpp Server.cpp msgProcess.cpp requestProcess.cpp MysqlConn.cpp ConnPool.cpp base64_ssl.cpp
 
 # 需要链接的库
-LIBS = -levent -lssl -lcrypto -lmysqlclient -L/usr/local/lib -ljsoncpp
+LIBS = -levent -levent_openssl -lssl -lcrypto -lmysqlclient -L/usr/local/lib -ljsoncpp
 
 # 目标规则：生成可执行文件
 $(TARGET):
