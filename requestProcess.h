@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unordered_map>
+#include <spdlog/spdlog.h>
 using namespace std;
 
 //请求处理

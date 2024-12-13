@@ -3,6 +3,7 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>//条件变量
+#include <spdlog/spdlog.h>
 #include "MysqlConn.h"
 using namespace std;
 

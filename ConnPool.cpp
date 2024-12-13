@@ -42,7 +42,7 @@ ConnPool::~ConnPool() {
 ConnPool::ConnPool() {
     // 加载配置文件
     if (!parseJsonFile()) {
-        std::cout << "加载配置文件失败！！！" << std::endl;
+        spdlog::default_logger()->error("加载配置文件失败!!!");
         return;
     }
     for (int i = 0; i < m_minSize; ++i) {
@@ -61,7 +61,7 @@ bool ConnPool::parseJsonFile() {
     Json::Value root;
     rd.parse(ifs, root);
     if (root.isObject()) {
-        std::cout << "开始解析配置文件..." << std::endl;
+        spdlog::default_logger()->info("开始解析配置文件...");
         m_ip = root["ip"].asString();
         m_port = root["port"].asInt();
         m_user = root["userName"].asString();

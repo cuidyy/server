@@ -58,7 +58,7 @@ void requestProcess::Process(string msg)
         //reader将Json字符串解析到root，root将包含Json里面所有的子元素
         if(!reader.parse(request_body, root))
         {
-            cout << "json解析失败" << endl;
+            spdlog::default_logger()->error("json解析失败");
             return;
         }
 
@@ -66,15 +66,18 @@ void requestProcess::Process(string msg)
         if(reqpath == "/login")
         {
             Json::Value user = root["user"];
+            spdlog::default_logger()->info("Login request");
             Login(user);
         }
         if(reqpath == "/register")
         {
+            spdlog::default_logger()->info("Register request");
             Json::Value user = root["user"];
             Register(user);
         }
         if(reqpath == "/upload")
         {
+            spdlog::default_logger()->info("Upload request");
             Json::Value user = root["user"];
             Upload(user);
         }
@@ -85,12 +88,14 @@ void requestProcess::Process(string msg)
         //根据请求类型进行处理
         if(reqpath == "/getlist")
         {
+            spdlog::default_logger()->info("Getlist request");
             Json::Value user;
             user["username"] = params["username"];
             Getlist(user);
         }
         if(reqpath == "/download")
         {
+            spdlog::default_logger()->info("Download request");
             Json::Value user;
             user["username"] = params["username"];
             user["imagename"] = params["imagename"];
@@ -102,6 +107,7 @@ void requestProcess::Process(string msg)
         //根据请求类型进行处理
         if(reqpath == "/delete")
         {
+            spdlog::default_logger()->info("Delete request");
             Json::Value user;
             user["username"] = params["username"];
             user["imagename"] = params["imagename"];
@@ -122,6 +128,7 @@ void requestProcess::Login(Json::Value user)
     //数据库连接失败,直接返回
     if(!conn->is_connected())
     {
+        spdlog::default_logger()->error("连接数据库失败");
         reply_msg["request"] = "login";
         reply_msg["msg"] = "连接数据库失败";
         status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
@@ -138,17 +145,17 @@ void requestProcess::Login(Json::Value user)
     // 用户不存在
     if(!conn->next())
     {
+        spdlog::default_logger()->info("用户名不存在或密码有误");
         reply_msg["request"] = "login";
         reply_msg["msg"] = "用户名不存在或密码有误";
         status_line = "HTTP/1.1 403 Bad Request\r\n\r\n";
-        cout << "用户名不存在" << endl;
     }
     else    // 用户存在
     {
+        spdlog::default_logger()->info("用户 {} 登录成功", username);
         reply_msg["request"] = "login";
         reply_msg["msg"] = "登录成功";
         status_line = "HTTP/1.1 200 OK\r\n\r\n";
-        cout << "登录成功" << endl;
     }
     
     //释放结果集
@@ -170,6 +177,7 @@ void requestProcess::Register(Json::Value user)
     //数据库连接失败,直接返回
     if(!conn->is_connected())
     {
+        spdlog::default_logger()->error("连接数据库失败");
         reply_msg["request"] = "register";
         reply_msg["msg"] = "连接数据库失败";
         status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
@@ -189,24 +197,25 @@ void requestProcess::Register(Json::Value user)
         if(!conn->update(sql_insert))
         {
             //插入数据库失败
+            spdlog::default_logger()->info("用户 {} 注册失败", username);
             reply_msg["request"] = "register";
             reply_msg["msg"] = "注册失败";
             status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         }
         else
         {
+            spdlog::default_logger()->info("用户 {} 注册成功", username);
             reply_msg["request"] = "register";
             reply_msg["msg"] = "注册成功";
             status_line = "HTTP/1.1 201 Created\r\n\r\n";
-            cout << "注册成功" << endl;
         }
     }
     else    //用户存在
     {
+        spdlog::default_logger()->info("用户名 {} 已存在", username);
         reply_msg["request"] = "register";
         reply_msg["msg"] = "用户名已存在";
         status_line = "HTTP/1.1 403 Bad Request\r\n\r\n";
-        cout << "用户名已存在" << endl;
     }
 
     //释放结果集
@@ -229,6 +238,7 @@ void requestProcess::Upload(Json::Value user)
     //数据库连接失败,直接返回
     if(!conn->is_connected())
     {
+        spdlog::default_logger()->error("连接数据库失败");
         reply_msg["request"] = "upload";
         reply_msg["msg"] = "连接数据库失败";
         status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
@@ -244,7 +254,6 @@ void requestProcess::Upload(Json::Value user)
     if(!conn->next())   //图片不存在，插入图片数据
     {
         string user_path = "/home/cuidy/test/picture/" + username;
-        cout << user_path << endl;
         // 检测用户目录是否存在
         struct stat st;
         if(stat(user_path.c_str(), &st) == -1)
@@ -252,7 +261,7 @@ void requestProcess::Upload(Json::Value user)
             //如果用户目录不存在，创建用户目录
             if(mkdir(user_path.c_str(), 0755) == -1)
             {
-                std::cerr << "创建用户目录失败" << endl;
+                spdlog::default_logger()->error("创建用户目录失败");
                 return;
             }
         }
@@ -262,14 +271,15 @@ void requestProcess::Upload(Json::Value user)
         ofstream file(image_path, std::ios::out);
         if (!file) 
         {
-            std::cerr << "创建文件失败" << endl;
+            spdlog::default_logger()->error("创建文件失败");
             return;
         }
         //将imagedata写入文件
         file.write(imagedata.c_str(), imagedata.size());
         //关闭文件
         file.close();
-        cout << "数据已成功写入文件" << endl;
+
+        spdlog::default_logger()->info("数据成功写入文件");
 
         //将记录插入user_img表中
         string sql_insert = "insert into user_img (username, imagename, imagepath) values (\'"
@@ -278,12 +288,14 @@ void requestProcess::Upload(Json::Value user)
         if(!conn->update(sql_insert))
         {
             //插入数据库失败
+            spdlog::default_logger()->info("图片 {} 上传失败", imagename);
             reply_msg["request"] = "upload";
             reply_msg["msg"] = imagename + "上传失败";
             status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         }
         else
         {
+            spdlog::default_logger()->info("图片 {} 上传成功", imagename);
             reply_msg["request"] = "upload";
             reply_msg["msg"] = imagename + "上传成功";
             status_line = "HTTP/1.1 200 OK\r\n\r\n";
@@ -291,6 +303,7 @@ void requestProcess::Upload(Json::Value user)
     }
     else//图片存在不做任何处理直接回复
     {
+        spdlog::default_logger()->info("图片 {} 已存在", imagename);
         reply_msg["request"] = "upload";
         reply_msg["msg"] = imagename + "上传成功";
         status_line = "HTTP/1.1 200 OK\r\n\r\n";
@@ -315,6 +328,7 @@ void requestProcess::Getlist(Json::Value user)
     //数据库连接失败,直接返回
     if(!conn->is_connected())
     {
+        spdlog::default_logger()->error("连接数据库失败");
         reply_msg["request"] = "upload";
         reply_msg["msg"] = "连接数据库失败";
         status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
@@ -334,7 +348,7 @@ void requestProcess::Getlist(Json::Value user)
     reply_msg["list"] = list;
     reply_msg["request"] = "getlist";
     status_line = "HTTP/1.1 200 OK\r\n\r\n";
-    
+    spdlog::default_logger()->info("获取列表成功");
     //释放结果集
     conn->freeResult();
     
@@ -352,6 +366,7 @@ void requestProcess::Download(Json::Value user)
     //数据库连接失败,直接返回
     if(!conn->is_connected())
     {
+        spdlog::default_logger()->error("连接数据库失败");
         reply_msg["request"] = "download";
         reply_msg["msg"] = "连接数据库失败";
         status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
@@ -369,7 +384,7 @@ void requestProcess::Download(Json::Value user)
         ifstream file(image_path, std::ios::in);
         if (!file) 
         {
-            std::cerr << "打开文件失败" << endl;
+            spdlog::default_logger()->error("文件 {} 打开失败", imagename);
             return;
         }
         // 使用stringstream来存储读取到的数据
@@ -379,19 +394,21 @@ void requestProcess::Download(Json::Value user)
         std::string imagedata = buffer.str();
         //关闭文件
         file.close();
-        cout << "数据已成功读出文件" << endl;
+        spdlog::default_logger()->info("文件 {} 读取成功", imagename);
 
         reply_msg["imagedata"] = imagedata;
         reply_msg["msg"] = "下载成功";
         reply_msg["imagename"] = imagename;
         reply_msg["request"] = "download";
         status_line = "HTTP/1.1 200 OK\r\n\r\n";
+        spdlog::default_logger()->info("下载成功");
     }
     else
     {
         reply_msg["msg"] = "图片不存在";
         reply_msg["request"] = "download";
         status_line = "HTTP/1.1 403 Bad Request\r\n\r\n";
+        spdlog::default_logger()->info("图片 {} 不存在", imagename);
     }
 
     //释放结果集
@@ -409,6 +426,7 @@ void requestProcess::Delete(Json::Value user)
     //数据库连接失败,直接返回
     if(!conn->is_connected())
     {
+        spdlog::default_logger()->error("连接数据库失败");
         reply_msg["request"] = "delete";
         reply_msg["msg"] = "连接数据库失败";
         status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
@@ -426,6 +444,7 @@ void requestProcess::Delete(Json::Value user)
                             + username + "\' and imagename = \'" + imagename + "\';";
         if(!conn->update(sql_delete))   
         {
+            spdlog::default_logger()->info("删除失败");
             reply_msg["request"] = "delete";
             reply_msg["msg"] = "删除失败";
             status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
@@ -447,6 +466,7 @@ void requestProcess::Delete(Json::Value user)
             reply_msg["msg"] = "删除成功";
             reply_msg["list"] = list;
             status_line = "HTTP/1.1 200 OK\r\n\r\n";
+            spdlog::default_logger()->info("删除成功");
         }
     }
     else//图片不存在
@@ -454,6 +474,7 @@ void requestProcess::Delete(Json::Value user)
         reply_msg["request"] = "delete";
         reply_msg["msg"] = "图片不存在";
         status_line = "HTTP/1.1 403 Bad Request\r\n\r\n";
+        spdlog::default_logger()->info("图片 {} 不存在", imagename);
     }
     //释放结果集
     conn->freeResult();

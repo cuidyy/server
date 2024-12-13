@@ -21,7 +21,7 @@
 #include <event2/bufferevent_ssl.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-
+#include <spdlog/spdlog.h>
 #include "msgProcess.h"
 #include "requestProcess.h"
 using namespace std;
