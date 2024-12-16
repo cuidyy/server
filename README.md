@@ -14,3 +14,12 @@ openssl req -new -key server.key -out server.csr -subj "/CN=server_ip"
 
 # 使用CA签署服务器证书
 openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256
+
+# 生成程序
+mkdir build
+
+cd build
+
+cmake ..
+
+make
