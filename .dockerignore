@@ -1,0 +1,4 @@
+build/
+.git*
+项目说明文档/
+/Makefile

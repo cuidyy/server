@@ -2,13 +2,13 @@
 CC = g++
 
 # 编译选项
-CFLAGS = -I/usr/include/jsoncpp/
+CFLAGS = -I./include -I/usr/include/jsoncpp/
 
 # 目标可执行文件
 TARGET = test
 
 # 源文件列表
-SRCS = main.cpp Server.cpp msgProcess.cpp requestProcess.cpp MysqlConn.cpp ConnPool.cpp base64_ssl.cpp
+SRCS = $(wildcard ./src/*.cpp)
 
 # 需要链接的库
 LIBS = -levent -levent_openssl -lssl -lcrypto -lmysqlclient -L/usr/local/lib -ljsoncpp

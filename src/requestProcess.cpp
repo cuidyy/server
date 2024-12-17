@@ -253,7 +253,7 @@ void requestProcess::Upload(Json::Value user)
     //遍历结果集，查看图片是否存在
     if(!conn->next())   //图片不存在，插入图片数据
     {
-        string user_path = "/home/cuidy/test/picture/" + username;
+        string user_path = "../picture/" + username;
         // 检测用户目录是否存在
         struct stat st;
         if(stat(user_path.c_str(), &st) == -1)
