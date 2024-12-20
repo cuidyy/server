@@ -24,6 +24,7 @@
 #include <spdlog/spdlog.h>
 #include "msgProcess.h"
 #include "requestProcess.h"
+#include "ConnPool.h"
 using namespace std;
 #define BUFFER_SIZE 1024
 class Server

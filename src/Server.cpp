@@ -43,8 +43,8 @@ Server::~Server()
 //运行
 void Server::run()
 {
+    spdlog::default_logger()->info("服务器启动，监听端口：{}", port);
     init();
-    spdlog::default_logger()->info("服务器启动，监听端口：{}", ntohs(saddr.sin_port));
 }
 
 //服务器初始化
@@ -62,7 +62,7 @@ void Server::init()
     memset(&saddr, 0, sizeof(saddr));
     saddr.sin_family = AF_INET;
     saddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    saddr.sin_port = htons(8080);
+    saddr.sin_port = htons(port);
 
     //初始化监听器对象
     listener = evconnlistener_new_bind(base, accept_cb, this, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1, (struct sockaddr*)&saddr, sizeof(saddr));
@@ -71,7 +71,12 @@ void Server::init()
         spdlog::default_logger()->error("listener 创建失败");
         exit(1);
     }
-
+    //检查数据库连接池是否创建成功
+    if(ConnPool::getConnPool()->isConnPoolClosed())
+    {
+        spdlog::default_logger()->error("数据库连接池创建失败");
+        return;
+    }
     //开启事件主循环
     event_base_dispatch(base);
 }
@@ -121,15 +126,14 @@ void read_cb(struct bufferevent *bev, void *arg)
 //异常事件回调函数
 void event_cb(struct bufferevent *bev, short events, void *arg)
 {
-    if(events & BEV_EVENT_EOF)//与客户端断开连接
+    if(events & BEV_EVENT_EOF)
     {
-        spdlog::default_logger()->info("客户端断开连接");
         //释放bufferevent资源
         bufferevent_free(bev);
     }
     else if (events & BEV_EVENT_ERROR)
     {
-        spdlog::default_logger()->info("客户端发生错误");
+        spdlog::default_logger()->info("客户端断开连接");
         bufferevent_free(bev);
     }
     else if (events & BEV_EVENT_TIMEOUT)

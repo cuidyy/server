@@ -1,0 +1,40 @@
+version: '3'
+networks:
+  mynet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "10.9.8.0/24"        
+          gateway: 10.9.8.1            
+
+services:
+  server:
+    image: server:cuidyy
+    container_name: server
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - 8080:8080
+    networks:
+      mynet:
+        ipv4_address: 10.9.8.128
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: mydb
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      mynet:
+        ipv4_address: 10.9.8.155
+
+

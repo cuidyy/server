@@ -45,8 +45,13 @@ ConnPool::ConnPool() {
         spdlog::default_logger()->error("加载配置文件失败!!!");
         return;
     }
+    spdlog::default_logger()->info("配置文件加载成功...");
     for (int i = 0; i < m_minSize; ++i) {
-        addConn();
+        if(!addConn())
+        {
+            spdlog::default_logger()->error("添加连接失败!!!");
+            return;
+        }
     }
     thread producer(&ConnPool::produceConn, this);// 生产连接
     thread recycler(&ConnPool::recycleConn, this);// 销毁连接
@@ -83,6 +88,10 @@ void ConnPool::produceConn() {
         while (m_connQ.size() >= m_minSize) {
             m_cond.wait(locker);  // 等待消费者通知
         }
+        if (is_ConnPoolClosed) //连接池关闭，线程退出不再生产新的连接
+        {
+            return;
+        }
         addConn(); // 生产连接
         m_cond.notify_all();// 通知消费者(唤醒)
     }
@@ -107,9 +116,19 @@ void ConnPool::recycleConn() {
 }
  
 // 添加连接到连接池
-void ConnPool::addConn() {
+bool ConnPool::addConn() {
     MysqlConn* conn = new MysqlConn;
-    conn->connect(m_user, m_passwd, m_dbName, m_ip, m_port);
+    if(!conn->connect(m_user, m_passwd, m_dbName, m_ip, m_port))
+    {
+        is_ConnPoolClosed = true;    // 连接失败，连接池关闭
+        return false;
+    }
     conn->refreshAliveTime();// 记录建立连接的时候的对应的时间戳
     m_connQ.push(conn);
+    return true;
+}
+
+// 判断连接池是否关闭
+bool ConnPool::isConnPoolClosed(){
+    return is_ConnPoolClosed;
 }

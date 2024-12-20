@@ -17,10 +17,6 @@ MysqlConn::~MysqlConn() {
 // 连接数据库
 bool MysqlConn::connect(string user, string passwd, string dbName, string ip, unsigned short port) {
     MYSQL* ptr = mysql_real_connect(m_conn, ip.c_str(), user.c_str(), passwd.c_str(), dbName.c_str(), port, nullptr, 0);
-    if(ptr == nullptr)//连接失败
-    {
-        connected_status = false;
-    }
     return ptr != nullptr;
 }
  
@@ -36,6 +32,12 @@ bool MysqlConn::update(string sql) {
 bool MysqlConn::query(string sql) {
     freeResult(); // 释放之前查询的结果集
     if (mysql_query(m_conn, sql.c_str())) {
+        int err_num = mysql_errno(m_conn);
+        // 不同版本的MySQL对于连接断开等错误有不同的错误码定义，常见的如下
+        if (err_num == 2003 || err_num == 2006 || err_num == 2013) {
+            spdlog::default_logger()->error("连接失效");
+            return false;
+        }
         return false;
     }
     m_result = mysql_store_result(m_conn); // 获取查询结果
@@ -101,7 +103,3 @@ void MysqlConn::freeResult() {
     }
 }
 
-bool MysqlConn::is_connected()
-{
-    return connected_status;
-}

@@ -126,21 +126,26 @@ void requestProcess::Login(Json::Value user)
     auto conn = ConnPool::getConnPool()->getConn();
 
     //数据库连接失败,直接返回
-    if(!conn->is_connected())
-    {
-        spdlog::default_logger()->error("连接数据库失败");
-        reply_msg["request"] = "login";
-        reply_msg["msg"] = "连接数据库失败";
-        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
-        sendMsg();
-        return;
-    }
 
     string sql_str = "select * from user where username = \'"
                     + username + "\' and password = \'" + password + "\';";
 
-    conn->query(sql_str);//查询数据库
-
+    if(!conn->query(sql_str))//查询数据库
+    {
+        //查询数据库失败，说明连接失效，关闭服务器
+        spdlog::default_logger()->error("连接数据库失败，服务器关闭");
+        reply_msg["request"] = "login";
+        reply_msg["msg"] = "连接数据库失败，服务器关闭";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+        sendMsg();
+        struct timeval tv;
+        tv.tv_sec = 5;  // 设置秒数为5，表示5秒后退出事件循环
+        tv.tv_usec = 0;  // 微秒
+        event_base *base = bufferevent_get_base(m_bev);
+        event_base_loopexit(base, &tv);
+        return;
+    }
+    // 查询成功
     //遍历结果集，查看用户是否存在
     // 用户不存在
     if(!conn->next())
@@ -174,21 +179,25 @@ void requestProcess::Register(Json::Value user)
     //获取数据库连接
     auto conn = ConnPool::getConnPool()->getConn();
 
-    //数据库连接失败,直接返回
-    if(!conn->is_connected())
-    {
-        spdlog::default_logger()->error("连接数据库失败");
-        reply_msg["request"] = "register";
-        reply_msg["msg"] = "连接数据库失败";
-        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
-        sendMsg();
-        return;
-    }
-
     string sql_str = "select * from user where username = \'"
                     + username + "\';";
                     
-    conn->query(sql_str);//查询数据库
+    if(!conn->query(sql_str))//查询数据库
+    {
+        //查询数据库失败，说明连接失效，关闭服务器
+        spdlog::default_logger()->error("连接数据库失败，服务器关闭");
+        reply_msg["request"] = "register";
+        reply_msg["msg"] = "连接数据库失败，服务器关闭";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+        sendMsg();
+        struct timeval tv;
+        tv.tv_sec = 5;  // 设置秒数为5，表示5秒后退出事件循环
+        tv.tv_usec = 0;  // 微秒
+        event_base *base = bufferevent_get_base(m_bev);
+        event_base_loopexit(base, &tv);
+        return;
+    }
+    // 查询成功
     //遍历结果集，查看用户是否存在
     if(!conn->next())   //用户不存在，插入新数据
     {
@@ -235,21 +244,25 @@ void requestProcess::Upload(Json::Value user)
     //获取数据库连接
     auto conn = ConnPool::getConnPool()->getConn();
 
-    //数据库连接失败,直接返回
-    if(!conn->is_connected())
-    {
-        spdlog::default_logger()->error("连接数据库失败");
-        reply_msg["request"] = "upload";
-        reply_msg["msg"] = "连接数据库失败";
-        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
-        sendMsg();
-        return;
-    }
-
     string sql_str = "select * from user_img where username = \'"
                     + username + "\' and imagename = \'" + imagename + "\';";
 
-    conn->query(sql_str);//查询数据库
+    if(!conn->query(sql_str))//查询数据库
+    {
+        //查询数据库失败，说明连接失效，关闭服务器
+        spdlog::default_logger()->error("连接数据库失败，服务器关闭");
+        reply_msg["request"] = "upload";
+        reply_msg["msg"] = "连接数据库失败，服务器关闭";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+        sendMsg();
+        struct timeval tv;
+        tv.tv_sec = 5;  // 设置秒数为5，表示5秒后退出事件循环
+        tv.tv_usec = 0;  // 微秒
+        event_base *base = bufferevent_get_base(m_bev);
+        event_base_loopexit(base, &tv);
+        return;
+    }
+    // 查询成功
     //遍历结果集，查看图片是否存在
     if(!conn->next())   //图片不存在，插入图片数据
     {
@@ -325,21 +338,25 @@ void requestProcess::Getlist(Json::Value user)
     //获取数据库连接
     auto conn = ConnPool::getConnPool()->getConn();
 
-    //数据库连接失败,直接返回
-    if(!conn->is_connected())
-    {
-        spdlog::default_logger()->error("连接数据库失败");
-        reply_msg["request"] = "upload";
-        reply_msg["msg"] = "连接数据库失败";
-        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
-        sendMsg();  
-        return;
-    }
-
     string sql_str = "select imagename from user_img where username = \'"
                     + username + "\';";
 
-    conn->query(sql_str);//查询数据库
+    if(!conn->query(sql_str))//查询数据库
+    {
+        //查询数据库失败，说明连接失效，关闭服务器
+        spdlog::default_logger()->error("连接数据库失败，服务器关闭");
+        reply_msg["request"] = "getlist";
+        reply_msg["msg"] = "连接数据库失败，服务器关闭";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+        sendMsg();
+        struct timeval tv;
+        tv.tv_sec = 5;  // 设置秒数为5，表示5秒后退出事件循环
+        tv.tv_usec = 0;  // 微秒
+        event_base *base = bufferevent_get_base(m_bev);
+        event_base_loopexit(base, &tv);
+        return;
+    }
+    // 查询成功
     while(conn->next())
     {
         string imgname = conn->value(0);
@@ -363,20 +380,25 @@ void requestProcess::Download(Json::Value user)
     //获取数据库连接
     auto conn = ConnPool::getConnPool()->getConn();
     
-    //数据库连接失败,直接返回
-    if(!conn->is_connected())
-    {
-        spdlog::default_logger()->error("连接数据库失败");
-        reply_msg["request"] = "download";
-        reply_msg["msg"] = "连接数据库失败";
-        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
-        sendMsg();
-        return;
-    }
     string sql_str = "select imagepath from user_img where username = \'"
                 + username + "\' and imagename = \'" + imagename + "\';";
 
-    conn->query(sql_str);//查询数据库
+    if(!conn->query(sql_str))//查询数据库
+    {
+        //查询数据库失败，说明连接失效，关闭服务器
+        spdlog::default_logger()->error("连接数据库失败，服务器关闭");
+        reply_msg["request"] = "download";
+        reply_msg["msg"] = "连接数据库失败，服务器关闭";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+        sendMsg();
+        struct timeval tv;
+        tv.tv_sec = 5;  // 设置秒数为5，表示5秒后退出事件循环
+        tv.tv_usec = 0;  // 微秒
+        event_base *base = bufferevent_get_base(m_bev);
+        event_base_loopexit(base, &tv);
+        return;
+    }
+    // 查询成功
     //图片是否存在
     if(conn->next())//图片存在
     {
@@ -423,20 +445,26 @@ void requestProcess::Delete(Json::Value user)
 
     //获取数据库连接
     auto conn = ConnPool::getConnPool()->getConn();
-    //数据库连接失败,直接返回
-    if(!conn->is_connected())
-    {
-        spdlog::default_logger()->error("连接数据库失败");
-        reply_msg["request"] = "delete";
-        reply_msg["msg"] = "连接数据库失败";
-        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
-        sendMsg();
-        return;
-    }
+
     string sql_str = "select * from user_img where username = \'"
                     + username + "\' and imagename = \'" + imagename + "\';";
 
-    conn->query(sql_str);//查询数据库
+    if(!conn->query(sql_str))//查询数据库
+    {
+        //查询数据库失败，说明连接失效，关闭服务器
+        spdlog::default_logger()->error("连接数据库失败，服务器关闭");
+        reply_msg["request"] = "delete";
+        reply_msg["msg"] = "连接数据库失败，服务器关闭";
+        status_line = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+        sendMsg();
+        struct timeval tv;
+        tv.tv_sec = 5;  // 设置秒数为5，表示5秒后退出事件循环
+        tv.tv_usec = 0;  // 微秒
+        event_base *base = bufferevent_get_base(m_bev);
+        event_base_loopexit(base, &tv);
+        return;
+    }
+    // 查询成功
     //图片是否存在
     if(conn->next())//图片存在
     {
