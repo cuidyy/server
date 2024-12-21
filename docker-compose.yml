@@ -10,7 +10,7 @@ networks:
 
 services:
   server:
-    image: server:cuidyy
+    image: cuidyy/server:cuidyy
     container_name: server
     build:
       context: .
@@ -24,7 +24,7 @@ services:
       - mysql
 
   mysql:
-    image: mysql:8
+    image: cuidyy/mysql:8
     container_name: mysql
     ports:
       - 3306:3306
@@ -36,5 +36,10 @@ services:
     networks:
       mynet:
         ipv4_address: 10.9.8.155
-
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      retries: 5
+      timeout: 10s
+      start_period: 10s
 

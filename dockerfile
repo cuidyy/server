@@ -39,5 +39,5 @@ RUN rm -rf build && \
 EXPOSE 8080
 
 # 设置容器启动时的命令，运行服务端可执行文件，此处假设可执行文件名为'test'，可根据实际替换
-CMD ["./test"]
+CMD ["./wait-for-it", "mysql:3306", "--", "./test"]
 
